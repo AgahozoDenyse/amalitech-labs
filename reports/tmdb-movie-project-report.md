@@ -135,7 +135,6 @@ The results show that both types of movies generate high revenue, although franc
 
 **Figure 5:** Comparison of average revenue between franchise and standalone movies.
 
-The bar chart shows that both franchise and standalone movies have comparable average revenue, suggesting that success is not limited to franchise films.
 
 ## Conclusion
 
@@ -145,10 +144,9 @@ The pipeline was used to collect movie data, clean and transform the dataset, ca
 
 The analysis shows that:
 
-- Movies with larger budgets tend to generate higher revenue, indicating a positive relationship between investment and earnings.
-- Return on investment (ROI) varies across genres, showing that profitability depends on the type of movie.
-- The relationship between popularity and rating exists but is not strictly linear.
-- Both franchise and standalone movies perform strongly, with no significant difference in average revenue in this dataset.
-- Certain directors and franchises contribute significantly to overall movie success.
+- Movies with larger budgets often generate higher revenue.
+- Some movies achieve very high return on investment (ROI).
+- Major franchises contribute significantly to global box office revenue.
+- Certain directors consistently produce successful movies.
 
-This project highlights how data analysis can be used to better understand movie industry performance and supports data-driven decision-making.
+This project highlights how data analysis can be used to better understand movie industry performance.

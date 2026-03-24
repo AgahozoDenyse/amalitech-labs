@@ -2,10 +2,10 @@
 Fetch movie data from TMDB API and save raw dataset.
 """
 
-import requests
-import pandas as pd
-import os
-from dotenv import load_dotenv
+# import requests
+# import pandas as pd
+# import os
+# from dotenv import load_dotenv
 
 
 # Load API key

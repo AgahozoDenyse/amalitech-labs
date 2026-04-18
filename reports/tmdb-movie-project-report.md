@@ -1,152 +1,185 @@
 # TMDB Movie Data Analysis using Python, Pandas, and API
 
 ## Introduction
- The movie industry generates billions of dollars every year. Understanding the factors that influence movie success can help explain trends in revenue, popularity and profitability.
 
- This project builds a complete data analysis pipeline using Python and TMDB API. The pipeline extracts movie data, cleans the dataset, performs analysis, and creates visualizations.
+The movie industry generates billions of dollars annually, making it an important domain for data-driven analysis. Understanding the factors that influence movie success—such as budget, genre, and popularity—can provide valuable insights into revenue and profitability trends.
 
- ## Data Extraction
+This project implements a complete data analysis pipeline using Python and the TMDB API. The pipeline extracts movie data, cleans and transforms it, computes key performance indicators (KPIs), and generates visual insights.
 
- The movie data was obtained from the TMDB API. The following movie IDs were: 299534, 19995, 140607, 299536, 597, 135397, 420818, 24428, 168259, 99861, 284054, 12445, 181808, 330457, 351286, 109445, 321612, 260513.
+---
 
- The data was stored in the Pandas DataFrame and saved as raw_movies.csv in data folder.
+## Data Extraction
 
- ## Data cleaning and transformation
-### Removed unnecessary columns
+Movie data was obtained from the TMDB API using a predefined list of movie IDs:
 
-1. adult
-2. imdb_id
-3. original_title
-4. video
-5. homepage
+299534, 19995, 140607, 299536, 597, 135397, 420818, 24428, 168259, 99861, 284054, 12445, 181808, 330457, 351286, 109445, 321612, 260513.
 
-### Flatten JSON columns
+The extracted data was stored in a Pandas DataFrame and saved as `raw_movies.csv` in the data folder.
 
-The following JSON columns were converted into readable text:
+### Robust API Handling
 
-1. genres
-2. production_companies
-3. production_countries
-4. spoken_languages
-5. belongs_to_collection
+To ensure reliability, the extraction process includes:
 
-### Data type conversion
+* Retry logic with exponential backoff
+* Graceful handling of API failures
+* Skipping invalid movie IDs (e.g., ID = 0)
+* Logging of failed requests
 
-Some columns were converted to the correct data types to make the analysis easier.
+These improvements make the pipeline resilient to network or API-related issues.
 
-1. `release_date` was converted to datetime so that the movie release years could be analyzed.
-2. `budget`, `revenue`, `runtime`, `popularity`, `vote_count` and `vote_average` were converted to numeric values.
-3. Invalid values were converted to `NaN` using `errors="coerce"`
+---
+
+## Data Cleaning and Transformation
+
+### Removed Unnecessary Columns
+
+The following columns were removed to simplify the dataset:
+
+* adult
+* imdb_id
+* original_title
+* video
+* homepage
+
+---
+
+### Flattened JSON Columns
+
+The following JSON fields were transformed into readable formats:
+
+* genres
+* production_companies
+* production_countries
+* spoken_languages
+* belongs_to_collection
+
+---
+
+### Data Type Conversion
+
+To enable proper analysis:
+
+* `release_date` → converted to datetime
+* Numerical fields (`budget`, `revenue`, `runtime`, `popularity`, `vote_count`, `vote_average`) → converted to numeric
+* Invalid values handled using `errors="coerce"`
+
+---
 
 ### Feature Engineering
 
-New variables were created to improve the analysis. Two new columns were generated:
+New variables were created:
 
-1. `budget_musd`: movie budget converted to million USD
-2. `revenue_musd`: movie revenue converted to million USD
+* `budget_musd` = budget / 1,000,000
+* `revenue_musd` = revenue / 1,000,000
 
-This was done using the following transformation:
+Additional derived metrics:
 
-budget_musd = budget / 1,000,000  
-revenue_musd = revenue / 1,000,000
+* `profit_musd` = revenue_musd − budget_musd
+* `roi` = revenue_musd / budget_musd
 
-Using million USD values makes the financial analysis easier to read and compare.
+These features enable meaningful financial comparisons and profitability analysis.
 
-Additional variables were also created during analysis:
-
-- `profit_musd` = revenue_musd − budget_musd
-- `roi` = revenue_musd / budget_musd
-
-These variables allow us to measure **movie profitability and return on investment**.
+---
 
 ## KPI Analysis
 
-Key Performance Indicators (KPIs) were used to evaluate the performance of the movies in the dataset. KPIs help measure how successful a movie is based on financial performance, popularity, and audience ratings.
+Key Performance Indicators (KPIs) were used to evaluate movie performance across financial and audience metrics. These include revenue, profit, ROI, popularity, and ratings.
 
-In this project, several KPIs were calculated to identify the best performing movies. These indicators include revenue, profit, return on investment (ROI), popularity, and ratings.
-
-To simplify the analysis, a **user-defined function (UDF)** was created to rank movies based on different metrics such as revenue, profit, and ROI.
+A reusable ranking function was implemented to standardize comparisons:
 
 ```python
 def rank_movies(df, column, ascending=False, n=10):
     return df.sort_values(column, ascending=ascending)[["title", column]].head(n)
 ```
+
+This function allows consistent identification of top-performing movies across different metrics.
+
+---
+
 ## Franchise Analysis
 
-The dataset was used to compare franchise movies and standalone movies.
+The dataset was used to compare franchise and standalone movies.
 
-Results show that:
+Findings include:
 
-- Both franchise and standalone movies generate high revenue
-- There is no large difference in average revenue in this dataset
-- Performance depends on individual movies rather than category alone
+* Both franchise and standalone movies generate high revenue
+* Standalone movies slightly outperform franchises in average revenue within this dataset
+* Performance is driven more by individual blockbuster titles than by category
+
+---
+
 ## Data Visualization
 
-Several visualizations were created to explore relationships between important movie variables.
+Several visualizations were created to explore relationships between key variables.
 
-## Revenue vs Budget
+---
 
-The following scatter plot shows the relationship between movie budget and revenue. Movies with larger budgets tend to generate higher revenue.
+### Revenue vs Budget
 
 ![Revenue vs Budget](../images/revenue_vs_budget.png)
 
 **Figure 1:** Relationship between movie budget and revenue.
 
-Movies with higher production budgets generally generate higher box office revenue, although there are some variations. This indicates a positive relationship between budget and revenue.
+Movies with larger budgets generally generate higher revenue. However, the relationship is not strictly proportional, indicating diminishing returns at higher budget levels.
 
-## ROI Distribution by Genre
+---
 
-Figure 2 shows how the return on investment (ROI) varies across different movie genres.
+### ROI Distribution by Genre
 
 ![ROI by Genre](../images/roi_by_genre.png)
 
 **Figure 2:** Distribution of ROI across movie genres.
 
-Some genres show higher median ROI values than others, meaning they tend to generate more revenue compared to their production budget. The variation also shows that profitability can differ significantly between genres.
+ROI varies significantly across genres. Some genres show higher median ROI, suggesting stronger profitability, while others exhibit greater variability and risk.
+
 ---
-## Popularity vs Rating
 
-Figure 3 shows the relationship between audience ratings and movie popularity.
-
-Movies with higher ratings tend to have higher popularity scores. However, the relationship is not strictly linear, as some movies with average ratings still achieve high popularity.
+### Popularity vs Rating
 
 ![Popularity vs Rating](../images/popularity_vs_rating.png)
 
 **Figure 3:** Relationship between movie ratings and popularity.
+
+There is a weak positive relationship between ratings and popularity. However, popularity is influenced by multiple factors beyond ratings alone.
+
 ---
-## Yearly Revenue Trend
 
-This line chart shows how the total movie revenue changes across different release years.
-
-The chart highlights how certain years generate higher total revenue due to the release of major blockbuster movies.
+### Yearly Revenue Trend
 
 ![Yearly Revenue](../images/yearly_revenue.png)
 
-**Figure 4:** Total box office revenue by release year.
+**Figure 4:** Average revenue by release year.
+
+Revenue trends fluctuate across years, with spikes driven by blockbuster releases. This indicates that a small number of high-performing films significantly impact yearly averages.
 
 ---
-## Franchise vs Standalone Movies
 
-This bar chart compares the average revenue of franchise movies and standalone movies.
-
-The results show that both types of movies generate high revenue, although franchise movies often have larger budgets and strong audience recognition.
+### Franchise vs Standalone Movies
 
 ![Franchise vs Standalone](../images/franchise_vs_standalone.png)
 
 **Figure 5:** Comparison of average revenue between franchise and standalone movies.
 
+Both categories perform strongly, but standalone movies slightly outperform franchises in this dataset, influenced by major individual successes.
+
+---
 
 ## Conclusion
 
 This project demonstrates how to build a complete movie data analysis pipeline using Python, Pandas, and the TMDB API.
 
-The pipeline was used to collect movie data, clean and transform the dataset, calculate key performance indicators, and create visualizations.
+The pipeline was used to:
 
-The analysis shows that:
+* Extract real-world data from an API
+* Clean and transform complex datasets
+* Compute meaningful KPIs
+* Generate visual insights
 
-- Movies with larger budgets often generate higher revenue.
-- Some movies achieve very high return on investment (ROI).
-- Major franchises contribute significantly to global box office revenue.
-- Certain directors consistently produce successful movies.
+Key findings include:
 
-This project highlights how data analysis can be used to better understand movie industry performance.
+* Higher budgets generally lead to higher revenue, but with diminishing returns
+* ROI varies significantly, highlighting efficiency differences across movies
+* Standalone movies slightly outperform franchises in this dataset
+* A small number of blockbuster films dominate overall revenue trends
+
+Overall, this project demonstrates how robust data engineering and structured analysis can transform raw API data into meaningful and actionable insights.

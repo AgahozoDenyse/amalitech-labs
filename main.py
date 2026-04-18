@@ -1,73 +1,62 @@
-"""
-Main script to run the TMDB Movie Data Analysis project.
+import logging
+import pandas as pd
 
-This script controls the full workflow of the project:
-- Fetch movie data from the TMDB API
-- Clean and prepare the dataset
-- Perform KPI analysis
-- Display results
-- Generate visualizations
+from src.fetch_movies import fetch_movies
+from src.clean_movies import clean_movies
+from src.analysis import run_analysis
+from src.visualization import visualize_data
+from config import MOVIE_IDS, RAW_DATA_PATH, CLEAN_DATA_PATH
 
-All outputs are handled in this file to keep the project organized.
-"""
-from src import fetch_movies
-from src import cleaned_movies
-from src import analysis
-from src import visualization
+
+# -----------------------------
+# LOGGING SETUP
+# -----------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def main():
+    logging.info("Starting TMDB Data Pipeline...")
 
     # -----------------------------
-    # Fetch API data
+    # STEP 1: FETCH DATA
     # -----------------------------
-    df_raw, errors = fetch_movies.fetch_movies()
+    logging.info("Fetching movie data...")
+    movies, failed_ids = fetch_movies(MOVIE_IDS)
 
-    # Print warnings from fetching
-    if errors:
-        print("\nWarnings during data fetching:")
-        for err in errors:
-            print(err)
+    df_raw = pd.DataFrame(movies)
+    df_raw.to_csv(RAW_DATA_PATH, index=False)
 
-    # -----------------------------
-    # Clean dataset
-    # -----------------------------
-    cleaned_movies.clean_data()
+
+    logging.info(f"Saved raw dataset with {len(df_raw)} movies")
+    logging.info(f"Failed movie IDs: {failed_ids}")
 
     # -----------------------------
-    # KPI analysis
+    # STEP 2: CLEAN DATA
     # -----------------------------
-    df = analysis.load_data()
+    df_clean = clean_movies(df_raw)
+    df_clean.to_csv(CLEAN_DATA_PATH, index=False)
+    
 
-    print("\nTop Revenue Movies")
-    print(analysis.rank_movies(df, "revenue_musd"))
-
-    print("\nTop Profit Movies")
-    print(analysis.rank_movies(df, "profit_musd"))
-
-    print("\nHighest ROI Movies")
-    print(analysis.rank_movies(df, "roi"))
-
-    print("\nBruce Willis Sci-Fi Action Movies")
-    print(analysis.search_bruce_willis(df))
-
-    print("\nUma Thurman + Tarantino Movies")
-    print(analysis.search_tarantino(df))
-
-    print("\nFranchise vs Standalone")
-    print(analysis.franchise_vs_standalone(df))
-
-    print("\nMost Successful Franchises")
-    print(analysis.successful_franchises(df).head(10))
-
-    print("\nMost Successful Directors")
-    print(analysis.successful_directors(df).head(10))
+    logging.info(f"Cleaned dataset saved with {len(df_clean)} movies")
 
     # -----------------------------
-    # Visualizations
+    # STEP 3: ANALYSIS
     # -----------------------------
-    visualization.run_all_visualizations()
+    df_analyzed = run_analysis(df_clean)
+
+    # -----------------------------
+    # STEP 4: VISUALIZATION
+    # -----------------------------
+    visualize_data(df_analyzed)
+
+    logging.info("Pipeline completed successfully!")
 
 
+# -----------------------------
+# ENTRY POINT
+# -----------------------------
 if __name__ == "__main__":
     main()

@@ -1,0 +1,46 @@
+# -----------------------------
+# Python cache
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+
+# -----------------------------
+# Virtual environments
+# -----------------------------
+venv/
+.env/
+.venv/
+
+# -----------------------------
+# Environment variables (IMPORTANT)
+# -----------------------------
+.env
+
+# -----------------------------
+# Jupyter Notebook checkpoints
+# -----------------------------
+.ipynb_checkpoints/
+
+# -----------------------------
+# OS files
+# -----------------------------
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+
+# -----------------------------
+# Data files (OPTIONAL)
+# -----------------------------
+# Uncomment if you don't want to push data
+# data/raw_movies.csv
+# data/cleaned_movies.csv
+
+# -----------------------------
+# Images (OPTIONAL)
+# -----------------------------
+# images/

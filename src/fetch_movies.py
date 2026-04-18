@@ -1,53 +1,78 @@
-"""
-Fetch movie data from TMDB API and save raw dataset.
-"""
+import requests
+import time
+import logging
+import os
+from dotenv import load_dotenv
 
-# import requests
-# import pandas as pd
-# import os
-# from dotenv import load_dotenv
-
-
-# Load API key
 load_dotenv()
+
 API_KEY = os.getenv("TMDB_API_KEY")
+BASE_URL = "https://api.themoviedb.org/3/movie/"
 
-if not API_KEY:
-    raise ValueError("TMDB_API_KEY not found. Please check your .env file.")
-
-
-movie_ids = [
-    0, 299534, 19995, 140607, 299536, 597, 135397, 420818,
-    24428, 168259, 99861, 284054, 12445, 181808,
-    330457, 351286, 109445, 321612, 260513
-]
+logging.basicConfig(level=logging.INFO)
 
 
-def fetch_movies():
+def fetch_movies(movie_ids):
+    if not API_KEY:
+        raise ValueError("TMDB API key not found. Check your .env file.")
 
     movies = []
-    errors = []   # collect errors instead of printing
+    failed_ids = []
 
     for movie_id in movie_ids:
+        if movie_id == 0:
+            logging.warning("Skipping invalid movie ID: 0")
+            continue
 
-        url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}&append_to_response=credits"
+        url = f"{BASE_URL}{movie_id}?api_key={API_KEY}"
+        credits_url = f"{BASE_URL}{movie_id}/credits?api_key={API_KEY}"
 
-        try:
-            response = requests.get(url, timeout=10)
+        retries = 3
+        for attempt in range(retries):
+            try:
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
 
-            if response.status_code == 200:
-                movies.append(response.json())
+                data = response.json()
 
-            else:
-                errors.append(f"Movie ID {movie_id} not found (status code {response.status_code})")
+                # -----------------------------
+                # FIX: Collection extraction
+                # -----------------------------
+                collection = data.get("belongs_to_collection")
+                if isinstance(collection, dict):
+                    data["belongs_to_collection"] = collection.get("name")
+                else:
+                    data["belongs_to_collection"] = None
 
-        except requests.exceptions.RequestException as e:
-            errors.append(f"Error fetching movie ID {movie_id}: {e}")
+                # -----------------------------
+                # FETCH CREDITS
+                # -----------------------------
+                credits_response = requests.get(credits_url, timeout=10)
+                credits_response.raise_for_status()
+                credits = credits_response.json()
 
-    df = pd.DataFrame(movies)
+                # Extract cast (top 5)
+                cast = [member["name"] for member in credits.get("cast", [])[:5]]
+                data["cast"] = "|".join(cast)
+                data["cast_size"] = len(credits.get("cast", []))
 
-    data_path = os.path.join(os.path.dirname(__file__), "..", "data", "raw_movies.csv")
+                # Extract director
+                crew = credits.get("crew", [])
+                directors = [c["name"] for c in crew if c["job"] == "Director"]
+                data["director"] = directors[0] if directors else "UNKNOWN"
+                data["crew_size"] = len(crew)
 
-    df.to_csv(data_path, index=False)
+                movies.append(data)
+                break
 
-    return df, errors   # return both
+            except requests.exceptions.RequestException as e:
+                logging.warning(f"Retry {attempt+1} for movie {movie_id}: {e}")
+                time.sleep(2 ** attempt)
+
+        else:
+            logging.error(f"Failed to fetch movie {movie_id}")
+            failed_ids.append(movie_id)
+
+        time.sleep(0.3)  # Rate limiting
+
+    return movies, failed_ids

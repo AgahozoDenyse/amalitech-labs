@@ -1,115 +1,204 @@
-# TMDB Movie Data Analysis using Python and TMDB API
+#  TMDB Movie Data Analysis Project
 
 ## Project Overview
 
-This project builds a complete movie data analysis pipeline using **Python**, **Pandas**, and the **TMDB API**.
+This project implements a complete **end-to-end data pipeline** using the TMDB (The Movie Database) API.
 
-The goal of the project is to collect movie data from an API, clean and transform the dataset, perform key performance analysis, and visualize important trends in the movie industry.
+It demonstrates how to:
 
-The project demonstrates key data analysis tasks including **API data extraction, data cleaning, feature engineering, KPI analysis, and data visualization**.
+* Extract real-world data from an external API
+* Clean and transform raw JSON data into structured datasets
+* Compute key performance indicators (KPIs)
+* Generate insightful visualizations
+* Deliver data-driven business insights
 
----
-
-## Project Objectives
-
-The main objectives of this project are:
-
-- Fetch movie data from the **TMDB API**
-- Clean and transform the dataset
-- Perform **Key Performance Indicator (KPI) analysis**
-- Compare **franchise movies vs standalone movies**
-- Identify **most successful franchises and directors**
-- Visualize trends using **Matplotlib**
+The project follows best practices in **data engineering and data analysis**, including modular design, logging, configuration management, and reproducibility.
 
 ---
 
-## Technologies Used
+## Pipeline Workflow
 
-The following tools and libraries were used in this project:
+The pipeline consists of four main stages:
 
-- Python
-- Pandas
-- Matplotlib
-- Requests
-- Python-dotenv
-- TMDB API
+### 1. Data Extraction
 
----
-
-
-## Project Structure
-
-```
-tmdb-movie-project/
-│
-├── data/
-│   ├── raw_movies.csv
-│   └── cleaned_movies.csv
-│
-├── images/
-│   ├── franchise_vs_standalone.png
-│   ├── popularity_vs_rating.png
-│   ├── revenue_vs_budget.png
-│   ├── roi_by_genre.png
-│   └── yearly_revenue.png
-│
-├── notebooks/
-│   ├── TMDB Movie Data Analysis using Pandas and APIs.ipynb
-│   └── tmdb_analysis.py
-│
-├── reports/
-│   └── tmdb-movie-project-report.md
-│
-├── src/
-│   ├── fetch_movies.py
-│   ├── cleaned_movies.py
-│   ├── analysis.py
-│   └── visualization.py
-│
-├── tests/
-│
-├── main.py
-├── README.md
-└── .env
-```
-
+* Fetches movie data from the TMDB API
+* Implements **retry logic with exponential backoff**
+* Handles API failures gracefully
+* Skips invalid movie IDs
+* Secures API key using environment variables
 
 ---
 
-## Data Pipeline
+### 2. Data Cleaning
 
-The project follows this workflow:
+* Removes irrelevant or redundant columns
+* Safely parses nested JSON fields (e.g., genres, collections)
+* Handles missing and inconsistent values
+* Converts financial metrics to **million USD**
+* Produces a clean, analysis-ready dataset
 
-1. **Data Extraction**  
-   Fetch movie data from the TMDB API.
+---
 
-2. **Data Cleaning**  
-   Remove unnecessary columns, handle missing values, and format data.
+### 3. KPI Analysis
 
-3. **Feature Engineering**  
-   Create new variables such as profit and ROI.
+* Computes revenue, profit, and ROI
+* Identifies top-performing movies by different metrics
+* Compares franchise vs standalone performance
+* Analyzes director-level performance
+* Applies filtering logic (e.g., ROI calculated only for budget ≥ 10M)
 
-4. **KPI Analysis**  
-   Analyze revenue, profit, ROI, franchises, and directors.
+---
 
-5. **Visualization**  
-   Create charts to explore trends and relationships.
+### 4. Visualization
+
+* Revenue vs Budget (trend relationship)
+* ROI distribution across genres
+* Popularity vs Rating analysis
+* Revenue trends over time
+* Franchise vs standalone comparison
 
 ---
 
 ## Key Insights
 
-The analysis revealed several important insights:
-
-- Movies with larger budgets tend to generate higher revenue, indicating a positive relationship between investment and earnings.
-- Return on investment (ROI) varies across genres, showing that profitability depends on the type of movie.
-- The relationship between popularity and rating exists but is not strictly linear.
-- Both franchise and standalone movies perform strongly, with no significant difference in average revenue in this dataset.
-- Certain directors consistently produce successful movies.
+* **Budget vs Revenue:** Higher budgets generally lead to higher revenue, but returns are not strictly proportional.
+* **ROI Variability:** Certain genres deliver higher returns but also exhibit greater financial risk.
+* **Franchise vs Standalone:** In this dataset, **standalone movies slightly outperform franchises in average revenue**, driven by high-performing titles such as *Avatar* and *Titanic*.
+* **Popularity vs Rating:** Weak correlation — popularity is influenced by factors beyond perceived quality.
+* **Revenue Trends:** A small number of blockbuster films significantly impact yearly averages.
+* **Director Performance:** Directors like *James Cameron* achieve high total revenue through a few exceptionally successful films.
 
 ---
 
-## Author
+## Project Structure
 
-Denyse AGAHOZO 
-Data Engineering in Apprenticeship Programme at AmaliTech
+```text
+tmdb-movie-project/
+│
+├── src/
+│   ├── fetch_movies.py
+│   ├── clean_movies.py
+│   ├── analysis.py
+│   ├── visualization.py
+│
+├── notebooks/
+│   └── tmdb_movie_analysis.ipynb
+│
+├── data/
+├── images/
+│
+├── main.py
+├── config.py
+├── requirements.txt
+├── README.md
+└── .env
+```
+
+---
+
+##  How to Run the Project
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd tmdb-movie-project
+```
+
+---
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv venv
+```
+
+Activate the environment:
+
+**Windows**
+
+```bash
+venv\Scripts\activate
+```
+
+**Linux / WSL**
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 4. Configure API key
+
+Create a `.env` file in the root directory:
+
+```env
+TMDB_API_KEY=your_api_key_here
+```
+
+---
+
+### 5. Run the data pipeline
+
+```bash
+python main.py
+```
+
+---
+
+### 6. Run the analysis notebook
+
+```bash
+jupyter notebook
+```
+
+Open:
+
+```text
+notebooks/tmdb_movie_analysis.ipynb
+```
+
+Then select **Run → Run All Cells**
+
+---
+
+## Requirements
+
+* Python 3.9+
+* pandas
+* numpy
+* matplotlib
+* seaborn
+* requests
+* python-dotenv
+
+---
+
+## Business Value
+
+This project provides insights into:
+
+* Key drivers of movie revenue
+* Profitability across genres
+* Comparative performance of franchises vs standalone films
+* Trends in audience engagement and popularity
+
+---
+
+## Conclusion
+
+This project demonstrates a **production-style data pipeline**, combining data engineering and analytical techniques to transform raw API data into actionable insights.
+
+It highlights the importance of robust data handling, structured analysis, and clear communication of results.
+
+---

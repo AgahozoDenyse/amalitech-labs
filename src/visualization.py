@@ -1,169 +1,110 @@
 """
-Create visualizations for TMDB movie analysis.
+Visualizations for TMDB movie analysis.
 """
 
-import matplotlib.pyplot as plt
-import os
 import logging
+import os
+
+import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
 
 
-# -----------------------------
-# Setup Logging
-# -----------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+def _save(fig_path: str) -> None:
+    """Apply tight layout, save figure to *fig_path*, and close it."""
+    plt.tight_layout()
+    plt.savefig(fig_path, dpi=150)
+    plt.close()
+    logger.info("Saved chart → %s", fig_path)
 
 
-# -----------------------------
-# Ensure Output Directory
-# -----------------------------
-def ensure_output_dir():
-    """
-    Create images directory if it does not exist.
-    """
+def _ensure_output_dir() -> str:
+    """Create and return the ``images/`` directory next to the project root."""
     path = os.path.join(os.path.dirname(__file__), "..", "images")
     os.makedirs(path, exist_ok=True)
     return path
 
 
-# -----------------------------
-# Revenue vs Budget
-# -----------------------------
-def plot_revenue_vs_budget(df, save_path):
-    """
-    Scatter plot of budget vs revenue.
-    """
-    df_valid = df.dropna(subset=["budget_musd", "revenue_musd"])
-
+def plot_revenue_vs_budget(df, save_path: str) -> None:
+    """Scatter plot of production budget vs box-office revenue (million USD)."""
+    valid = df.dropna(subset=["budget_musd", "revenue_musd"])
     plt.figure(figsize=(8, 5))
-    plt.scatter(df_valid["budget_musd"], df_valid["revenue_musd"])
-
+    plt.scatter(valid["budget_musd"], valid["revenue_musd"], alpha=0.6)
     plt.xlabel("Budget (Million USD)")
     plt.ylabel("Revenue (Million USD)")
     plt.title("Revenue vs Budget")
-
-    file_path = os.path.join(save_path, "revenue_vs_budget.png")
-    plt.savefig(file_path)
-    plt.close()
-
-    logging.info("Saved revenue vs budget plot")
+    plt.grid(True, linestyle="--", alpha=0.4)
+    _save(os.path.join(save_path, "revenue_vs_budget.png"))
 
 
-# -----------------------------
-# ROI by Genre
-# -----------------------------
-def plot_roi_by_genre(df, save_path):
-    """
-    Boxplot of ROI distribution by genre.
-    """
+def plot_roi_by_genre(df, save_path: str) -> None:
+    """Box plot of ROI distribution for each genre (budget-filtered films only)."""
     temp = df.dropna(subset=["genres", "roi"]).copy()
-
     temp["genres"] = temp["genres"].str.split("|")
     temp = temp.explode("genres")
 
-    plt.figure(figsize=(10, 6))
-    temp.boxplot(column="roi", by="genres", rot=45)
-
-    plt.title("ROI by Genre")
+    plt.figure(figsize=(12, 6))
+    temp.boxplot(column="roi", by="genres", rot=45, grid=False)
+    plt.title("ROI Distribution by Genre")
     plt.suptitle("")
     plt.xlabel("Genre")
-    plt.ylabel("ROI")
-
-    file_path = os.path.join(save_path, "roi_by_genre.png")
-    plt.savefig(file_path)
-    plt.close()
-
-    logging.info("Saved ROI by genre plot")
+    plt.ylabel("ROI (revenue / budget)")
+    _save(os.path.join(save_path, "roi_by_genre.png"))
 
 
-# -----------------------------
-# Popularity vs Rating
-# -----------------------------
-def plot_popularity_vs_rating(df, save_path):
-    """
-    Scatter plot of popularity vs rating.
-    """
-    df_valid = df.dropna(subset=["vote_average", "popularity"])
-
+def plot_popularity_vs_rating(df, save_path: str) -> None:
+    """Scatter plot of audience rating vs TMDB popularity score."""
+    valid = df.dropna(subset=["vote_average", "popularity"])
     plt.figure(figsize=(8, 5))
-    plt.scatter(df_valid["vote_average"], df_valid["popularity"])
-
-    plt.xlabel("Vote Average")
-    plt.ylabel("Popularity")
-    plt.title("Popularity vs Rating")
-
-    file_path = os.path.join(save_path, "popularity_vs_rating.png")
-    plt.savefig(file_path)
-    plt.close()
-
-    logging.info("Saved popularity vs rating plot")
+    plt.scatter(valid["vote_average"], valid["popularity"], alpha=0.6)
+    plt.xlabel("Vote Average (0–10)")
+    plt.ylabel("Popularity Score")
+    plt.title("Popularity vs Audience Rating")
+    plt.grid(True, linestyle="--", alpha=0.4)
+    _save(os.path.join(save_path, "popularity_vs_rating.png"))
 
 
-# -----------------------------
-# Yearly Revenue Trend
-# -----------------------------
-def plot_yearly_revenue(df, save_path):
-    """
-    Line plot of average revenue over time.
-    """
-    # Ensure year exists
+def plot_yearly_revenue(df, save_path: str) -> None:
+    """Line plot of mean box-office revenue per release year."""
     if "release_year" not in df.columns:
+        df = df.copy()
         df["release_year"] = df["release_date"].dt.year
 
     yearly = df.groupby("release_year")["revenue_musd"].mean().reset_index()
-
-    plt.figure(figsize=(8, 5))
-    plt.plot(yearly["release_year"], yearly["revenue_musd"], marker="o")
-
-    plt.xlabel("Year")
+    plt.figure(figsize=(10, 5))
+    plt.plot(yearly["release_year"], yearly["revenue_musd"], marker="o", linewidth=1.5)
+    plt.xlabel("Release Year")
     plt.ylabel("Average Revenue (Million USD)")
-    plt.title("Average Revenue Over Time")
-
-    file_path = os.path.join(save_path, "yearly_revenue.png")
-    plt.savefig(file_path)
-    plt.close()
-
-    logging.info("Saved yearly revenue plot")
+    plt.title("Average Box-Office Revenue Over Time")
+    plt.grid(True, linestyle="--", alpha=0.4)
+    _save(os.path.join(save_path, "yearly_revenue.png"))
 
 
-# -----------------------------
-# Franchise vs Standalone
-# -----------------------------
-def plot_franchise_vs_standalone(df, save_path):
-    """
-    Bar chart comparing franchise vs standalone movies.
-    """
+def plot_franchise_vs_standalone(df, save_path: str) -> None:
+    """Bar chart comparing mean revenue of franchise vs standalone films."""
     comparison = df.groupby("is_franchise")["revenue_musd"].mean()
+    comparison.index = comparison.index.map({True: "Franchise", False: "Standalone"})
 
     plt.figure(figsize=(6, 4))
-    comparison.plot(kind="bar")
-
-    plt.xlabel("Franchise")
+    comparison.plot(kind="bar", color=["steelblue", "coral"])
+    plt.xlabel("Film Type")
     plt.ylabel("Average Revenue (Million USD)")
-    plt.title("Franchise vs Standalone")
-
-    file_path = os.path.join(save_path, "franchise_vs_standalone.png")
-    plt.savefig(file_path)
-    plt.close()
-
-    logging.info("Saved franchise comparison plot")
+    plt.title("Franchise vs Standalone: Average Revenue")
+    plt.xticks(rotation=0)
+    _save(os.path.join(save_path, "franchise_vs_standalone.png"))
 
 
-# -----------------------------
-# MAIN VISUALIZATION FUNCTION
-# -----------------------------
-def visualize_data(df):
+def visualize_data(df) -> None:
     """
-    Run all visualizations using processed dataframe.
-    """
-    save_path = ensure_output_dir()
+    Generate and save all visualisation charts.
 
+    Args:
+        df: Processed DataFrame (output of ``compute_kpis``).
+    """
+    save_path = _ensure_output_dir()
     plot_revenue_vs_budget(df, save_path)
     plot_roi_by_genre(df, save_path)
     plot_popularity_vs_rating(df, save_path)
     plot_yearly_revenue(df, save_path)
     plot_franchise_vs_standalone(df, save_path)
-
-    logging.info("All visualizations generated successfully")
+    logger.info("All visualisations generated.")

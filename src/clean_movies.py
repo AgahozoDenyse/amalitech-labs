@@ -1,69 +1,78 @@
-import pandas as pd
-import numpy as np
 import logging
 
-logging.basicConfig(level=logging.INFO)
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
-def clean_movies(df):
-    logging.info("Cleaning dataset...")
+def _extract_names(obj) -> str:
+    """Return pipe-separated names from a list of ``{"name": ...}`` dicts."""
+    if isinstance(obj, list):
+        return "|".join(
+            item.get("name", "") for item in obj if isinstance(item, dict)
+        )
+    return np.nan
 
-    # Drop irrelevant columns
-    df.drop(columns=['adult', 'imdb_id', 'original_title', 'video', 'homepage'],
-            inplace=True, errors='ignore')
 
-    # -----------------------------
-    # SAFE JSON parsing
-    # -----------------------------
-    def extract_names(obj):
-        if isinstance(obj, list):
-            return "|".join([item.get("name", "") for item in obj])
-        return np.nan
+def clean_movies(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean and normalise raw TMDB movie data.
 
-    df['genres'] = df['genres'].apply(extract_names)
-    df['production_companies'] = df['production_companies'].apply(extract_names)
-    df['production_countries'] = df['production_countries'].apply(extract_names)
-    df['spoken_languages'] = df['spoken_languages'].apply(extract_names)
+    Steps performed:
+    - Drop irrelevant columns (adult, imdb_id, original_title, video, homepage).
+    - Parse nested list-of-dict fields into pipe-separated strings.
+    - Coerce numeric and date columns; replace zero budget/revenue/runtime with NaN.
+    - Convert budget and revenue to millions USD.
+    - Add ``is_franchise`` boolean and ``release_year`` integer columns.
+    - Keep only movies with status == "Released".
+    - Remove duplicate IDs and rows missing id or title.
+    - Drop rows with fewer than 10 non-null fields.
 
-    # -----------------------------
-    # Data types
-    # -----------------------------
-    numeric_cols = ['budget', 'revenue', 'runtime',
-                    'popularity', 'vote_count', 'vote_average']
+    Args:
+        df: Raw DataFrame produced from the TMDB API response list.
 
+    Returns:
+        Cleaned DataFrame with a reset integer index.
+    """
+    logger.info("Cleaning dataset...")
+    df = df.copy()
+
+    df = df.drop(
+        columns=["adult", "imdb_id", "original_title", "video", "homepage"],
+        errors="ignore",
+    )
+
+    for col in ["genres", "production_companies", "production_countries", "spoken_languages"]:
+        if col in df.columns:
+            df[col] = df[col].apply(_extract_names)
+
+    numeric_cols = ["budget", "revenue", "runtime", "popularity", "vote_count", "vote_average"]
     for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
+    if "release_date" in df.columns:
+        df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
 
-    # Replace 0 with NaN
-    df[['budget', 'revenue', 'runtime']] = df[['budget', 'revenue', 'runtime']].replace(0, np.nan)
+    for col in ["budget", "revenue", "runtime"]:
+        if col in df.columns:
+            df[col] = df[col].replace(0, np.nan)
 
-    # Convert to millions
-    df['budget_musd'] = df['budget'] / 1_000_000
-    df['revenue_musd'] = df['revenue'] / 1_000_000
+    if "budget" in df.columns:
+        df["budget_musd"] = df["budget"] / 1_000_000
+    if "revenue" in df.columns:
+        df["revenue_musd"] = df["revenue"] / 1_000_000
 
-    # -----------------------------
-    # FIX: Franchise flag
-    # -----------------------------
-    df['is_franchise'] = df['belongs_to_collection'].notna()
+    df["is_franchise"] = df["belongs_to_collection"].notna()
 
-    # Keep only released movies
-    if 'status' in df.columns:
-        df = df[df['status'] == 'Released']
-        df.drop(columns=['status'], inplace=True)
+    if "status" in df.columns:
+        df = df[df["status"] == "Released"].drop(columns=["status"])
 
-    # Remove duplicates
-    df.drop_duplicates(subset=['id'], inplace=True)
-
-    # Drop missing critical fields
-    df.dropna(subset=['id', 'title'], inplace=True)
-
-    # Keep rows with enough data
+    df = df.drop_duplicates(subset=["id"])
+    df = df.dropna(subset=["id", "title"])
     df = df[df.notna().sum(axis=1) >= 10]
+    df = df.reset_index(drop=True)
 
-    df.reset_index(drop=True, inplace=True)
-
-    logging.info(f"Cleaned dataset size: {len(df)}")
-
+    logger.info("Cleaned dataset: %d rows remaining.", len(df))
     return df

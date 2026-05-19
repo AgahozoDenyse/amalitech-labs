@@ -1,21 +1,39 @@
-# Virtual environment
+# ── Virtual environments ──────────────────────────────────────────────────────
 venv/
+.venv/
+env/
 
-# Python cache
+# ── Python cache ──────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.Python
 
-# Environment variables
+# ── Environment / secrets ─────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
 
-# Jupyter
+# ── Generated data files ──────────────────────────────────────────────────────
+data/raw_movies.csv
+data/cleaned_movies.csv
+data/failed_ids.txt
+
+# ── Generated images ──────────────────────────────────────────────────────────
+images/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
+*.ipynb
 
-# OS files
-.DS_Store
-
-# Data files (optional)
-data/*.csv
-
-# Logs
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
+
+# ── OS artefacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
